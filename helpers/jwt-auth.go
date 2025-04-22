@@ -21,7 +21,7 @@ func GenerateJwt(name string, email string) (string, string, error) {
 		Name:  name,
 		Email: email,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //Create the access token (expires in 15 minutes)
+			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(5)).Unix(), //Create the access token (expires in 5 minutes)
 		},
 	}
 	err := godotenv.Load(".env")
@@ -79,7 +79,7 @@ func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
 		Name:  username,
 		Email: email,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(),
+			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(5)).Unix(), // 5 mins
 		},
 	}
 	NewAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, NewClaims)

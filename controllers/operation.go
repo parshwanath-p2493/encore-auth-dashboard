@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"encore.app/database"
@@ -32,11 +33,12 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 
 	}
 	user.Password = NewPassword
-	Token, _, err := helpers.GenerateJwt(user.First_Name, user.Email)
+	Token, Refresh_Token, err := helpers.GenerateJwt(user.First_Name, user.Email)
 	if err != nil {
 		return &Response{Message: fmt.Errorf("error in creating the new token: %w", err).Error()}, nil
 	}
 	user.Token = Token
+	user.Refresh_Token = Refresh_Token
 	err, count := helpers.Validation(user)
 	if count > 0 {
 		log.Println(count)
@@ -73,7 +75,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 	if err != nil {
 		return &Response{Message: "Password is not matched"}, err
 	}
-	accesstoken, refreshtoken, err := helpers.GenerateJwt(req.First_Name, req.Email)
+	accesstoken, refreshtoken, err := helpers.GenerateJwt(user.First_Name, user.Email)
 	if err != nil {
 		return &Response{Message: "There is error in login try again..."}, err
 	}
@@ -85,6 +87,11 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 		},
 	}
 	_, err = collection.UpdateOne(c, filter, update)
+	if err != nil {
+		return &Response{Message: "There error is updating "}, err
+	}
+
+	_, err = helpers.SendMail(user.First_Name, user.Email)
 	if err != nil {
 		return &Response{Message: "There error is updating "}, err
 	}
@@ -100,25 +107,38 @@ type LoginReq struct {
 } //API request types must be named structs.        //Need to note important
 
 //encore:api auth method=DELETE path=/user/delete
-func DeleteUser(ctx context.Context, email *DeleteUserReq) (*Response, error) {
-	Ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+func DeleteUser(ctx context.Context, req *DeleteUserReq) (*Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	collection := database.OpenCollection("Users")
-	filter := bson.M{"email": email.UserEmail}
-	//user := authencore.UserFromContext(ctx)
-	//fmt.Println("Authenticated user:", user.Email)
-	log.Println("Authenticated user:", email.UserEmail)
 
-	result, err := collection.DeleteOne(Ctx, filter)
+	inputEmail := strings.TrimSpace(strings.ToLower(req.Email))
+	log.Printf("Received request to delete user. Normalized email: '%s'", inputEmail)
+
+	if inputEmail == "" {
+		return &Response{Message: "Invalid email provided"}, nil
+	}
+
+	collection := database.OpenCollection("Users")
+	filter := bson.M{"email": inputEmail}
+
+	var user models.Users
+	err := collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
-		return &Response{Message: "Errror in deleting the user"}, err
+		log.Println("User not found before deletion attempt:", err)
+	}
+
+	result, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return &Response{Message: "Error in deleting the user"}, err
 	}
 	if result.DeletedCount == 0 {
-		return &Response{Message: "User Not found unable to delete"}, err
+		return &Response{Message: "User not found, unable to delete"}, nil
 	}
-	return &Response{Message: "User Succcessfully deleted"}, nil
+
+	return &Response{Message: "User successfully deleted"}, nil
 }
 
 type DeleteUserReq struct {
-	UserEmail string `json:"email"`
+	UserEmail string `json:"useremail"`
+	Email     string `json:"email"` // preferred
 }

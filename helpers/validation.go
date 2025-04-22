@@ -29,3 +29,7 @@ func Validation(model interface{}) (error, int16) {
 	log.Println("\n Count is :", count)
 	return nil, count
 }
+
+// func EmailValidation (email string)(string ,error){
+
+// }
