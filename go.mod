@@ -3,6 +3,7 @@ module encore.app
 go 1.23.4
 
 require (
+	encore.dev v1.46.1
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt v3.2.2+incompatible
