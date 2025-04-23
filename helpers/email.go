@@ -13,6 +13,7 @@ import (
 var (
 	fromName  string
 	fromEmail string
+	key       string
 )
 
 func init() {
@@ -22,6 +23,8 @@ func init() {
 	}
 	fromName = os.Getenv("FROM_NAME")
 	fromEmail = os.Getenv("FROM_EMAIL")
+	key = os.Getenv("SENDGRID_API_KEY")
+
 }
 
 func SendMail(toName, toEmail string) (string, error) {
@@ -33,7 +36,7 @@ func SendMail(toName, toEmail string) (string, error) {
 
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 
-	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+	client := sendgrid.NewSendClient(key)
 	response, err := client.Send(message)
 	if err != nil {
 		log.Println("SendGrid error:", err)

@@ -39,6 +39,11 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	}
 	user.Token = Token
 	user.Refresh_Token = Refresh_Token
+	Email, err := helpers.EmailValidation(user.Email)
+	if err != nil {
+		return &Response{Message: "INVALID EMAIL"}, err
+	}
+	user.Email = Email
 	err, count := helpers.Validation(user)
 	if count > 0 {
 		log.Println(count)
@@ -50,6 +55,10 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 		return &Response{Message: fmt.Errorf("inserting user failed: %w", err).Error()}, nil
 
 		//return Status(http.StatusBadRequest).JSON(&fiber.Map{"message": "Error in inserting the data", "data": err.Error()})
+	}
+	_, err = helpers.SendMail(user.First_Name, user.Email)
+	if err != nil {
+		return &Response{Message: "There error is updating "}, err
 	}
 	//	return c.Status(http.StatusOK).JSON(&fiber.Map{"message": "User added successfully"})
 	return &Response{Message: "User added successfully"}, nil
@@ -106,7 +115,7 @@ type LoginReq struct {
 	Password   string `json:"password"`
 } //API request types must be named structs.        //Need to note important
 
-//encore:api auth method=DELETE path=/user/delete
+//encore:api auth method=POST path=/user/delete
 func DeleteUser(ctx context.Context, req *DeleteUserReq) (*Response, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -141,4 +150,22 @@ func DeleteUser(ctx context.Context, req *DeleteUserReq) (*Response, error) {
 type DeleteUserReq struct {
 	UserEmail string `json:"useremail"`
 	Email     string `json:"email"` // preferred
+}
+
+//encore:api public method=POST path=/user/refreshtoken
+func RefreshToken(ctx context.Context, req *RequestRefresh) (*AccessTokenResponse, error) {
+	newToken, err := helpers.HandleRefreshToken(req.RefreshToken)
+	if err != nil {
+		return &AccessTokenResponse{Message: "Unable to generate accesss token or token not yet expired", AccessToken: ""}, err
+	}
+	return &AccessTokenResponse{Message: "The new access token is generated and ", AccessToken: newToken.AccessToken}, nil
+
+}
+
+type RequestRefresh struct {
+	RefreshToken string `json:"refreshtoken"`
+}
+type AccessTokenResponse struct {
+	Message     string
+	AccessToken string
 }
