@@ -56,7 +56,7 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 
 		//return Status(http.StatusBadRequest).JSON(&fiber.Map{"message": "Error in inserting the data", "data": err.Error()})
 	}
-	_, err = helpers.SendMail(user.First_Name, user.Email)
+	err = helpers.SendMail(user.First_Name, user.Email)
 	if err != nil {
 		return &Response{Message: "There error is updating "}, err
 	}
@@ -100,7 +100,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 		return &Response{Message: "There error is updating "}, err
 	}
 
-	_, err = helpers.SendMail(user.First_Name, user.Email)
+	err = helpers.SendMail(user.First_Name, user.Email)
 	if err != nil {
 		return &Response{Message: "There error is updating "}, err
 	}
