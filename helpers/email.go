@@ -62,7 +62,7 @@ var subject = "Sending with Twilio SendGrid is Fun"
 func SendMail(toName, toEmail string) error {
 	fromEmail := "parshwanathparamagond1234@gmail.com"
 	//fromPassword := "fbfy zhlt csqr djay"
-	fromPassword := os.Getenv("FromPassword")
+	fromPassword := os.Getenv("KEY")
 
 	smtpHost := "smtp.gmail.com"
 	smtpPort := 587
