@@ -167,7 +167,7 @@ type DeleteUserReq struct {
 
 //encore:api public method=POST path=/user/refreshtoken
 func RefreshToken(ctx context.Context, req *RequestRefresh) (*AccessTokenResponse, error) {
-	newToken, err := helpers.HandleRefreshToken(req.RefreshToken)
+	newToken, err := helpers.HandleRefreshToken()
 	if err != nil {
 		return &AccessTokenResponse{Message: "Unable to generate accesss token or token not yet expired", AccessToken: ""}, err
 	}

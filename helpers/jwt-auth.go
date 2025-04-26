@@ -10,6 +10,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var (
+	GlobalSignedAccessToken  string
+	GlobalSignedRefreshToken string
+)
+
 type Info struct {
 	Name  string
 	Email string
@@ -48,6 +53,8 @@ func GenerateJwt(name string, email string) (string, string, error) {
 		return "There is error in signing the token", "", err
 	}
 	log.Println("Signed token refreshtoken is :", SignedRefreshToken)
+	GlobalSignedAccessToken = SignedAccessToken
+	GlobalSignedRefreshToken = SignedRefreshToken
 
 	return SignedAccessToken, SignedRefreshToken, nil
 }
@@ -58,7 +65,7 @@ func GenerateJwt(name string, email string) (string, string, error) {
 // }
 
 // Need to handle the refresh token and access token about When should the refresh token should create new access token and all
-func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
+func HandleRefreshToken() (*TokenString, error) {
 	// Load environment variables
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -66,27 +73,40 @@ func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
 	}
 	// Fetch the secret key from .env file
 	SecretKey := os.Getenv("SECRET_KEY")
+	AccessClaims := &Info{}
+	AccessToken, err := jwt.ParseWithClaims(GlobalSignedAccessToken, AccessClaims, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, http.ErrAbortHandler
+		}
+		return []byte(SecretKey), nil
+	})
+	if err != nil || !AccessToken.Valid {
+		log.Println("Invalid and access token  also expired LOgin again ")
+	} else {
 
-	claims := &Info{}
-	log.Println(claims)
+		expireTime := time.Unix(AccessClaims.ExpiresAt, 0)
+		log.Println(expireTime)
+		remaingTime := time.Until(expireTime)
+		if remaingTime > 30*time.Second {
+			return &TokenString{AccessToken: "Token is not yet Expired..."}, nil
+		}
+	}
+
+	//Paese Refreassh token for claims.....
+	Refreshclaims := &Info{}
+	log.Println(Refreshclaims)
 	//RefreshToken := jwt.Parse(helpers.SignedAccessToken, func(t *jwt.Token) (interface{}, error))
-	RefreshToken, err := jwt.ParseWithClaims(refreshTokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	RefreshToken, err := jwt.ParseWithClaims(GlobalSignedRefreshToken, Refreshclaims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, http.ErrAbortHandler
 		}
 		return []byte(SecretKey), nil
 	})
 	if err != nil || !RefreshToken.Valid {
-		return &TokenString{AccessToken: "Invalid refresh token and refresh also expired "}, http.ErrNoCookie
+		return &TokenString{AccessToken: "Invalid refresh token and refresh also expired LOgin again "}, http.ErrNoCookie
 	}
-	expireTime := time.Unix(claims.ExpiresAt, 0)
-	log.Println(expireTime)
-	remaingTime := time.Until(expireTime)
-	if remaingTime > 30*time.Second {
-		return &TokenString{AccessToken: "Token is not yet Expired..."}, nil
-	}
-	username := claims.Name
-	email := claims.Email
+	username := Refreshclaims.Name
+	email := Refreshclaims.Email
 	NewClaims := &Info{
 		Name:  username,
 		Email: email,
@@ -100,6 +120,7 @@ func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
 		log.Print("Failed to sign new access token:", err)
 		return nil, err
 	}
+	GlobalSignedAccessToken = NewAccessTokenString
 	return &TokenString{AccessToken: NewAccessTokenString}, nil
 }
 
