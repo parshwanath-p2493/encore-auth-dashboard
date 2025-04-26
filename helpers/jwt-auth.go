@@ -1,13 +1,16 @@
 package helpers
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"encore.app/database"
 	"github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
@@ -92,7 +95,7 @@ func HandleRefreshToken() (*TokenString, error) {
 		}
 	}
 
-	//Paese Refreassh token for claims.....
+	//Paese Refresh token for claims.....
 	Refreshclaims := &Info{}
 	log.Println(Refreshclaims)
 	//RefreshToken := jwt.Parse(helpers.SignedAccessToken, func(t *jwt.Token) (interface{}, error))
@@ -120,10 +123,35 @@ func HandleRefreshToken() (*TokenString, error) {
 		log.Print("Failed to sign new access token:", err)
 		return nil, err
 	}
+	RefreshExpiretime := Refreshclaims.ExpiresAt
+	update := bson.M{
+		"$set": bson.M{
+			"token":                   NewAccessTokenString,
+			"expiretimetoken":         time.Now().Local().Add(time.Minute * time.Duration(5)).Unix(),
+			"expiretimerefresh_token": RefreshExpiretime,
+			"refresh_token":           GlobalSignedRefreshToken,
+			"updated_time":            time.Now(),
+		},
+	}
+	collection := database.OpenCollection("Users")
+	_, err = collection.UpdateOne(context.Background(), bson.M{"email": email}, update)
+	if err != nil {
+		return &TokenString{AccessToken: "Unable to update the new data"}, err
+	}
 	GlobalSignedAccessToken = NewAccessTokenString
 	return &TokenString{AccessToken: NewAccessTokenString}, nil
 }
 
 type TokenString struct {
 	AccessToken string `json:"accesstoken"`
+}
+
+func AutoRegenarateToken() {
+	go func() {
+		time.Sleep(1 * time.Minute)
+		_, err := HandleRefreshToken()
+		if err != nil {
+			log.Println("Auto refresh Error:", err)
+		}
+	}()
 }

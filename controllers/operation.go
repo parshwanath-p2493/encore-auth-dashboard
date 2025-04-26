@@ -48,6 +48,7 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	}
 	user.Token = Token
 	user.Refresh_Token = Refresh_Token
+	go helpers.AutoRegenarateToken()
 	Email, err := helpers.EmailValidation(user.Email)
 	if err != nil {
 		return &Response{Message: "INVALID EMAIL"}, err
@@ -101,6 +102,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 	if err != nil {
 		return &Response{Message: "There is error in login try again..."}, err
 	}
+	go helpers.AutoRegenarateToken()
 	update := bson.M{
 		"$set": bson.M{
 			"token":         accesstoken,
