@@ -39,7 +39,7 @@ func GenerateJwt(name string, email string) (string, string, error) {
 	Secret_key := os.Getenv("SECRET_KEY")
 	log.Println("Key is :" + Secret_key)
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	log.Println(AccessToken)
+	//log.Println(AccessToken)
 	SignedAccessToken, err := AccessToken.SignedString([]byte(Secret_key))
 	if err != nil {
 		return "There is error in signing the token", "", err
@@ -74,6 +74,9 @@ func HandleRefreshToken() (*TokenString, error) {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	log.Println("cursor is in HandleRefresh Token")
+	//fmt.Println("cursor is in HandleRefresh Token")
+
 	// Fetch the secret key from .env file
 	SecretKey := os.Getenv("SECRET_KEY")
 	AccessClaims := &Info{}
@@ -88,13 +91,16 @@ func HandleRefreshToken() (*TokenString, error) {
 	} else {
 
 		expireTime := time.Unix(AccessClaims.ExpiresAt, 0)
-		log.Println(expireTime)
+		//log.Println("expire time of oldaccess token is", expireTime)
 		remaingTime := time.Until(expireTime)
 		if remaingTime > 30*time.Second {
+			log.Println("Token is not yet Expired...")
 			return &TokenString{AccessToken: "Token is not yet Expired..."}, nil
 		}
+		log.Println("Current time:", time.Now())
+		log.Println("Token expiry time:", expireTime)
+		log.Println("Remaining time:", remaingTime)
 	}
-
 	//Paese Refresh token for claims.....
 	Refreshclaims := &Info{}
 	log.Println(Refreshclaims)
@@ -108,6 +114,8 @@ func HandleRefreshToken() (*TokenString, error) {
 	if err != nil || !RefreshToken.Valid {
 		return &TokenString{AccessToken: "Invalid refresh token and refresh also expired LOgin again "}, http.ErrNoCookie
 	}
+	log.Println("Cursorsor moved next step form access to refresh")
+
 	username := Refreshclaims.Name
 	email := Refreshclaims.Email
 	NewClaims := &Info{
@@ -119,26 +127,34 @@ func HandleRefreshToken() (*TokenString, error) {
 	}
 	NewAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, NewClaims)
 	NewAccessTokenString, err := NewAccessToken.SignedString([]byte(SecretKey))
+	GlobalSignedAccessToken = NewAccessTokenString
 	if err != nil {
 		log.Print("Failed to sign new access token:", err)
 		return nil, err
 	}
-	RefreshExpiretime := Refreshclaims.ExpiresAt
+	RefreshExpiretime := time.Unix(Refreshclaims.ExpiresAt, 0)
+	log.Println("Refresh Token expiry time", RefreshExpiretime)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	collection := database.OpenCollection("Users")
+	filter := bson.M{"email": Refreshclaims.Email}
 	update := bson.M{
 		"$set": bson.M{
 			"token":                   NewAccessTokenString,
-			"expiretimetoken":         time.Now().Local().Add(time.Minute * time.Duration(5)).Unix(),
+			"expiretimetoken":         time.Now(),
 			"expiretimerefresh_token": RefreshExpiretime,
 			"refresh_token":           GlobalSignedRefreshToken,
 			"updated_time":            time.Now(),
 		},
 	}
-	collection := database.OpenCollection("Users")
-	_, err = collection.UpdateOne(context.Background(), bson.M{"email": email}, update)
+
+	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return &TokenString{AccessToken: "Unable to update the new data"}, err
 	}
-	GlobalSignedAccessToken = NewAccessTokenString
+	NewaccessExpTime := time.Unix(Refreshclaims.ExpiresAt, 0)
+	log.Println("Newacceesstoken is:", NewAccessTokenString)
+	log.Println(" New Token expiry time:", NewaccessExpTime)
 	return &TokenString{AccessToken: NewAccessTokenString}, nil
 }
 
@@ -148,10 +164,14 @@ type TokenString struct {
 
 func AutoRegenarateToken() {
 	go func() {
-		time.Sleep(1 * time.Minute)
-		_, err := HandleRefreshToken()
-		if err != nil {
-			log.Println("Auto refresh Error:", err)
+		log.Println("Starting auto regeneration of access token...")
+		for {
+			time.Sleep(1 * time.Minute)
+			log.Println("Refreshing the access token ..... now")
+			_, err := HandleRefreshToken()
+			if err != nil {
+				log.Println("Auto refresh Error:", err)
+			}
 		}
 	}()
 }

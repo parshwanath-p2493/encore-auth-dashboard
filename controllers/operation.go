@@ -48,6 +48,9 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	}
 	user.Token = Token
 	user.Refresh_Token = Refresh_Token
+	helpers.GlobalSignedAccessToken = Token
+	helpers.GlobalSignedRefreshToken = Refresh_Token
+	helpers.HandleRefreshToken()
 	go helpers.AutoRegenarateToken()
 	Email, err := helpers.EmailValidation(user.Email)
 	if err != nil {
@@ -102,6 +105,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 	if err != nil {
 		return &Response{Message: "There is error in login try again..."}, err
 	}
+	helpers.HandleRefreshToken()
 	go helpers.AutoRegenarateToken()
 	update := bson.M{
 		"$set": bson.M{
@@ -173,7 +177,7 @@ func RefreshToken(ctx context.Context, req *RequestRefresh) (*AccessTokenRespons
 	if err != nil {
 		return &AccessTokenResponse{Message: "Unable to generate accesss token or token not yet expired", AccessToken: ""}, err
 	}
-	return &AccessTokenResponse{Message: "The new access token is generated and ", AccessToken: newToken.AccessToken}, nil
+	return &AccessTokenResponse{Message: ".............d ", AccessToken: newToken.AccessToken}, nil
 
 }
 

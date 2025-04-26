@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -55,9 +56,9 @@ var (
 *
 */
 var plainText = "and easy to do anywhere, even with Go"
-var htmlContent = "<strong>and easy to do anywhere, even with Go</strong>"
+var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
-var subject = "Sending with Twilio SendGrid is Fun"
+var subject = "WEKCOME MESSAGE "
 
 func SendMail(toName, toEmail string) error {
 	fromEmail := "parshwanathparamagond1234@gmail.com"
