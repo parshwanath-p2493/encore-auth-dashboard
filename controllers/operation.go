@@ -23,6 +23,15 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	//BodyParser(&user)
 	//database.Connection()
 	collection := database.OpenCollection("Users")
+	var ExistingUser models.Users
+	filter := bson.M{"email": user.Email}
+	err := collection.FindOne(ctx, filter).Decode(&ExistingUser)
+	if err == nil {
+		return &Response{Message: "The user is already existed...."}, err
+	}
+	if err != mongo.ErrNoDocuments {
+		return &Response{Message: "Error while checking existing user"}, err
+	}
 	id := primitive.NewObjectID()
 	user.ID = id.Hex()
 	user.Created_time = time.Now()
@@ -74,8 +83,12 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 	defer cancel()
 	var user models.Users
 	collection := database.OpenCollection("Users")
+	_, err := helpers.EmailValidation(req.Email)
+	if err != nil {
+		return &Response{Message: "The mail is not valid enter valid.."}, err
+	}
 	filter := bson.M{"email": req.Email}
-	err := collection.FindOne(c, filter).Decode(&user)
+	err = collection.FindOne(c, filter).Decode(&user)
 	if err == mongo.ErrNilDocument {
 		return &Response{Message: "The user does not exist"}, err
 	}
