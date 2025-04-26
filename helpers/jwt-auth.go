@@ -52,6 +52,11 @@ func GenerateJwt(name string, email string) (string, string, error) {
 	return SignedAccessToken, SignedRefreshToken, nil
 }
 
+//If we need implement the automatic generation of Accesstoken use GOROUTINE
+// func init() {
+// 	HandleRefreshToken(SignedRefreshToken)
+// }
+
 // Need to handle the refresh token and access token about When should the refresh token should create new access token and all
 func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
 	// Load environment variables
@@ -63,6 +68,7 @@ func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
 	SecretKey := os.Getenv("SECRET_KEY")
 
 	claims := &Info{}
+	log.Println(claims)
 	//RefreshToken := jwt.Parse(helpers.SignedAccessToken, func(t *jwt.Token) (interface{}, error))
 	RefreshToken, err := jwt.ParseWithClaims(refreshTokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -72,6 +78,12 @@ func HandleRefreshToken(refreshTokenString string) (*TokenString, error) {
 	})
 	if err != nil || !RefreshToken.Valid {
 		return &TokenString{AccessToken: "Invalid refresh token and refresh also expired "}, http.ErrNoCookie
+	}
+	expireTime := time.Unix(claims.ExpiresAt, 0)
+	log.Println(expireTime)
+	remaingTime := time.Until(expireTime)
+	if remaingTime > 30*time.Second {
+		return &TokenString{AccessToken: "Token is not yet Expired..."}, nil
 	}
 	username := claims.Name
 	email := claims.Email
