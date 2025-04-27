@@ -115,6 +115,8 @@ func HandleRefreshToken() (*TokenString, error) {
 		return &TokenString{AccessToken: "Invalid refresh token and refresh also expired LOgin again "}, http.ErrNoCookie
 	}
 	log.Println("Cursorsor moved next step form access to refresh")
+	log.Println(Refreshclaims.Name)
+	log.Println(Refreshclaims.Email)
 
 	username := Refreshclaims.Name
 	email := Refreshclaims.Email

@@ -48,8 +48,8 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	}
 	user.Token = Token
 	user.Refresh_Token = Refresh_Token
-	helpers.GlobalSignedAccessToken = Token
-	helpers.GlobalSignedRefreshToken = Refresh_Token
+	// helpers.GlobalSignedAccessToken = Token
+	// helpers.GlobalSignedRefreshToken = Refresh_Token
 	helpers.HandleRefreshToken()
 	go helpers.AutoRegenarateToken()
 	Email, err := helpers.EmailValidation(user.Email)
