@@ -188,3 +188,14 @@ type AccessTokenResponse struct {
 	Message     string
 	AccessToken string
 }
+
+type InputForgotPassword struct {
+	Email string `json:"email"`
+}
+
+//encore:api public method=POST path=/user/forgotpassword
+func ForgotPassword(ctx context.Context, input *InputForgotPassword) (*Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return &Response{Message: "The Otp is sent to your email..	"}, nil
+}

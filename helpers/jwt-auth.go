@@ -154,7 +154,7 @@ func HandleRefreshToken() (*TokenString, error) {
 	if err != nil {
 		return &TokenString{AccessToken: "Unable to update the new data"}, err
 	}
-	NewaccessExpTime := time.Unix(Refreshclaims.ExpiresAt, 0)
+	NewaccessExpTime := time.Now().Local().Add(time.Minute * time.Duration(5)).Unix()
 	log.Println("Newacceesstoken is:", NewAccessTokenString)
 	log.Println(" New Token expiry time:", NewaccessExpTime)
 	return &TokenString{AccessToken: NewAccessTokenString}, nil
