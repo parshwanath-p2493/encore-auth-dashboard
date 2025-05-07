@@ -36,6 +36,10 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	user.ID = id.Hex()
 	user.Created_time = time.Now()
 	user.Updated_time = time.Now()
+	_, err = helpers.EmailValidation(user.Email)
+	if err != nil {
+		return &Response{Message: "INVALID EMAIL"}, err
+	}
 	NewPassword, err := helpers.HashPsw(user.Password)
 	if err != nil {
 		return &Response{Message: fmt.Errorf("error in hashing the password: %w", err).Error()}, nil
@@ -50,13 +54,10 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	user.Refresh_Token = Refresh_Token
 	// helpers.GlobalSignedAccessToken = Token
 	// helpers.GlobalSignedRefreshToken = Refresh_Token
-	helpers.HandleRefreshToken()
+	//helpers.HandleRefreshToken()
 	go helpers.AutoRegenarateToken()
-	Email, err := helpers.EmailValidation(user.Email)
-	if err != nil {
-		return &Response{Message: "INVALID EMAIL"}, err
-	}
-	user.Email = Email
+
+	//user.Email = user.Email
 	err, count := helpers.Validation(user)
 	if count > 0 {
 		log.Println(count)
@@ -105,7 +106,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 	if err != nil {
 		return &Response{Message: "There is error in login try again..."}, err
 	}
-	helpers.HandleRefreshToken()
+	//helpers.HandleRefreshToken()
 	go helpers.AutoRegenarateToken()
 	update := bson.M{
 		"$set": bson.M{
