@@ -12,8 +12,11 @@ var RedisClient *redis.Client
 var Ctx = context.Background()
 
 func InitRedis() {
+	host := os.Getenv("REDIS_HOST")
+	port := os.Getenv("REDIS_PORT")
+	add := host + ":" + port
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_HOST"),
+		Addr:     add,
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})

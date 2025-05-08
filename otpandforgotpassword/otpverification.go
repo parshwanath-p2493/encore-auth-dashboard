@@ -3,11 +3,16 @@ package otpandforgotpassword
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
 	"os"
+	"time"
 
+	"encore.app/database"
+	"encore.app/helpers"
+	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
 )
@@ -54,7 +59,42 @@ func SendOTP(toName, toEmail string, otp string) error {
 	message.AddAlternative("text/html", htmlContent)
 
 	dialer := gomail.NewDialer(smtpHost, smtpPort, fromEmail, fromPassword)
-	log.Println("Email has been sent")
+	log.Println("OTP Email has been sent")
 	// Send Email
 	return dialer.DialAndSend(message)
+}
+func VerifyOTP(ctx context.Context, input *InputResetPassword) error {
+	key := OtpKeyPrefix + input.Email
+	StoredOTP, err := RedisClient.Get(ctx, key).Bytes()
+	if err != nil {
+		return errors.New("OTP has expired or does not exist")
+	}
+	if err := bcrypt.CompareHashAndPassword(StoredOTP, []byte(input.OTP)); err != nil {
+		return errors.New("invalid OTP")
+	}
+	HashedPassword, err := helpers.HashPsw(input.NewPassword)
+	if err != nil {
+		return errors.New("failed to hash new password")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	collection := database.OpenCollection("Users")
+	filter := bson.M{"email": input.Email}
+	update := bson.M{
+		"$set": bson.M{
+			"password": HashedPassword,
+		},
+	}
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.New("error in updating the password ")
+	}
+	return nil
+}
+
+type InputResetPassword struct {
+	Name        string `name:"name"`
+	Email       string `json:"email"`
+	OTP         string `json:"otp"`
+	NewPassword string `json:"newpassword"`
 }

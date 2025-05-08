@@ -10,10 +10,15 @@ import (
 	"encore.app/database"
 	"encore.app/helpers"
 	"encore.app/models"
+	"encore.app/otpandforgotpassword"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+func init() {
+	otpandforgotpassword.InitRedis()
+}
 
 //encore:api public method=POST path=/user/signup
 func Signup(ctx context.Context, user *models.Users) (*Response, error) {
@@ -84,7 +89,7 @@ type Response struct {
 
 //encore:api public method=POST path=/user/login
 func Login(ctx context.Context, req *LoginReq) (*Response, error) {
-	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	c, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	var user models.Users
 	collection := database.OpenCollection("Users")
@@ -190,13 +195,32 @@ type AccessTokenResponse struct {
 	AccessToken string
 }
 
-type InputForgotPassword struct {
-	Email string `json:"email"`
-}
+// type InputForgotPassword struct {
+// 	Name  string `json:"name"`
+// 	Email string `json:"email"`
+// }
 
 //encore:api public method=POST path=/user/forgotpassword
-func ForgotPassword(ctx context.Context, input *InputForgotPassword) (*Response, error) {
+func ForgotPassword(ctx context.Context, input *otpandforgotpassword.InputResetPassword) (*Response, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	return &Response{Message: "The Otp is sent to your email..	"}, nil
+	Otp := otpandforgotpassword.GenerateOTP()
+	otpandforgotpassword.StoreOTPinRedis(Otp, input.Email, ctx)
+	err := otpandforgotpassword.SendOTP(input.Name, input.Email, Otp)
+	if err != nil {
+		return &Response{Message: "There error is updating "}, err
+	}
+	if errr := otpandforgotpassword.VerifyOTP(ctx, input); errr != nil {
+		return &Response{Message: "The OTP is mismatched ...."}, errr
+	}
+	return &Response{Message: "The otp is sent and stored "}, nil
 }
+
+// type InputForgotPassword struct {
+// 	Name  string `json:"name"`
+// 	Email string `json:"email"`
+// }
+//
+// func UpdatePassword(ctx context.Context,input *NewPassword)(){
+// }
+// }
