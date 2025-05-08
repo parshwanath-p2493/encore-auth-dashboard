@@ -5,56 +5,52 @@ import (
 	"log"
 	"os"
 
-	"gopkg.in/gomail.v2"
+	"github.com/joho/godotenv"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-/*
-**
-
 var (
-
 	fromName  string
 	fromEmail string
 	key       string
-
 )
 
-	func init() {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-		fromName = os.Getenv("FROM_NAME")
-		fromEmail = os.Getenv("FROM_EMAIL")
-		key = os.Getenv("SENDGRID_API_KEY")
+func init() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	fromName = os.Getenv("FROM_NAME")
+	fromEmail = os.Getenv("FROM_EMAIL")
+	key = os.Getenv("SENDGRID_API_KEY")
 
 }
 
-	func SendMail(toName, toEmail string) (string, error) {
-		from := mail.NewEmail(fromName, fromEmail)
-		to := mail.NewEmail(toName, toEmail)
-		subject := "Sending with Twilio SendGrid is Fun"
-		plainTextContent := "and easy to do anywhere, even with Go"
-		htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
+func SendMail(toName, toEmail string) error {
+	from := mail.NewEmail(fromName, fromEmail)
+	to := mail.NewEmail(toName, toEmail)
+	subject := "Sending with Twilio SendGrid is Fun"
+	plainTextContent := "and easy to do anywhere, even with Go"
+	htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
 
-		message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 
-		client := sendgrid.NewSendClient(key)
-		response, err := client.Send(message)
-		if err != nil {
-			log.Println("SendGrid error:", err)
-			return "", err
-		}
-
-		fmt.Println("Status:", response.StatusCode)
-		fmt.Println("Body:", response.Body)
-		fmt.Println("Headers:", response.Headers)
-
-		return "Welcome message sent successfully", nil
+	client := sendgrid.NewSendClient(key)
+	response, err := client.Send(message)
+	if err != nil {
+		log.Println("SendGrid error:", err)
+		return err
 	}
 
-*
-*/
+	fmt.Println("Status:", response.StatusCode)
+	fmt.Println("Body:", response.Body)
+	fmt.Println("Headers:", response.Headers)
+	log.Println("Welcome message sent successfully")
+	return nil
+}
+
+/*
 var plainText = "and easy to do anywhere, even with Go"
 var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
@@ -79,3 +75,4 @@ func SendMail(toName, toEmail string) error {
 	// Send Email
 	return dialer.DialAndSend(message)
 }
+*/

@@ -82,13 +82,15 @@ func VerifyOTP(ctx context.Context, input *InputResetPassword) error {
 	filter := bson.M{"email": input.Email}
 	update := bson.M{
 		"$set": bson.M{
-			"password": HashedPassword,
+			"password":    HashedPassword,
+			"update_time": time.Now(),
 		},
 	}
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.New("error in updating the password ")
 	}
+	RedisClient.Del(ctx, key)
 	return nil
 }
 

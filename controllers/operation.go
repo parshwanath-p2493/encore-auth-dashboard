@@ -195,32 +195,57 @@ type AccessTokenResponse struct {
 	AccessToken string
 }
 
-// type InputForgotPassword struct {
-// 	Name  string `json:"name"`
-// 	Email string `json:"email"`
-// }
+type InputForgotPasswordOTP struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+type URLResponse struct {
+	Message     string `json:"message"`
+	RedirectURL string `json:"redirect_url,omitempty"`
+}
+
+//encore:api public method=POST path=/user/otprequest
+func SendOTPtoEmail(ctx context.Context, input *InputForgotPasswordOTP) (*URLResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	inputEmail := strings.TrimSpace(strings.ToLower(input.Email))
+	log.Printf("Received request to Reset the password form user: '%s, %s'", inputEmail, input.Name)
+
+	if inputEmail == "" {
+		return &URLResponse{Message: "Invalid email provided",
+			RedirectURL: "",
+		}, nil
+	}
+
+	collection := database.OpenCollection("Users")
+	filter := bson.M{"email": inputEmail}
+
+	var user models.Users
+	err := collection.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		log.Println("User not found before deletion attempt:", err)
+	}
+	Otp := otpandforgotpassword.GenerateOTP()
+	otpandforgotpassword.StoreOTPinRedis(Otp, input.Email, ctx)
+	err = otpandforgotpassword.SendOTP(input.Name, input.Email, Otp)
+	if err != nil {
+		return &URLResponse{Message: "There error is updating "}, err
+	}
+
+	return &URLResponse{Message: "The otp is sent and stored ",
+		RedirectURL: "user/forgotpassword",
+	}, nil
+
+}
 
 //encore:api public method=POST path=/user/forgotpassword
 func ForgotPassword(ctx context.Context, input *otpandforgotpassword.InputResetPassword) (*Response, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	Otp := otpandforgotpassword.GenerateOTP()
-	otpandforgotpassword.StoreOTPinRedis(Otp, input.Email, ctx)
-	err := otpandforgotpassword.SendOTP(input.Name, input.Email, Otp)
-	if err != nil {
-		return &Response{Message: "There error is updating "}, err
-	}
+
 	if errr := otpandforgotpassword.VerifyOTP(ctx, input); errr != nil {
 		return &Response{Message: "The OTP is mismatched ...."}, errr
 	}
-	return &Response{Message: "The otp is sent and stored "}, nil
+	return &Response{Message: "The otp is Matched and new password is set.... "}, nil
 }
-
-// type InputForgotPassword struct {
-// 	Name  string `json:"name"`
-// 	Email string `json:"email"`
-// }
-//
-// func UpdatePassword(ctx context.Context,input *NewPassword)(){
-// }
-// }
