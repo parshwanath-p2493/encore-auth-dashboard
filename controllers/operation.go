@@ -34,8 +34,8 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	}
 	id := primitive.NewObjectID()
 	user.ID = id.Hex()
-	user.Created_time = time.Now()
-	user.Updated_time = time.Now()
+	user.Created_time = time.Now().Local()
+	user.Updated_time = time.Now().Local()
 	_, err = helpers.EmailValidation(user.Email)
 	if err != nil {
 		return &Response{Message: "INVALID EMAIL"}, err
@@ -112,7 +112,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 		"$set": bson.M{
 			"token":         accesstoken,
 			"refresh_token": refreshtoken,
-			"updated_time":  time.Now(),
+			"updated_time":  time.Now().Local(),
 		},
 	}
 	_, err = collection.UpdateOne(c, filter, update)
@@ -168,8 +168,8 @@ func DeleteUser(ctx context.Context, req *DeleteUserReq) (*Response, error) {
 }
 
 type DeleteUserReq struct {
-	UserEmail string `json:"useremail"`
-	Email     string `json:"email"` // preferred
+	UserName string `json:"username"`
+	Email    string `json:"email"` // preferred
 }
 
 //encore:api public method=POST path=/user/refreshtoken

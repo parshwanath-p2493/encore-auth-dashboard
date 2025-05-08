@@ -39,7 +39,7 @@ func SendOTP(toName, toEmail string, otp string) error {
 	fromEmail := "parshwanathparamagond1234@gmail.com"
 	//fromPassword := "fbfy zhlt csqr djay"
 	fromPassword := os.Getenv("KEY")
-	var plainText = "Your request for Reset Password is working..."
+	var plainText = "Your request for Reset Password is working... \n The OTP will expire in 10 minutes"
 	htmlContent := fmt.Sprintf("Hii %s \n"+
 		"Your OTP for password reset is %s\r\n", toName, otp)
 	var subject = "PASSWORD RESET "
