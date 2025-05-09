@@ -1,12 +1,21 @@
 package helpers
 
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
+)
+
 var (
 	fromName  string
 	fromEmail string
 	key       string
 )
 
-/*
 func init() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -40,7 +49,6 @@ func SendMail(toName, toEmail string) error {
 	log.Println("Welcome message sent successfully")
 	return nil
 }
-*/
 
 /*
 var plainText = "and easy to do anywhere, even with Go"
