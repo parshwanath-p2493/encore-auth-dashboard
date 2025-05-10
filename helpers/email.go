@@ -26,7 +26,7 @@ func init() {
 
 }
 
-/*
+
 func SendMail(toName, toEmail string) error {
 	from := mail.NewEmail(fromName, fromEmail)
 	to := mail.NewEmail(toName, toEmail)
@@ -49,8 +49,8 @@ func SendMail(toName, toEmail string) error {
 	log.Println("Welcome message sent successfully")
 	return nil
 }
-*/
 
+/*
 var plainText = "and easy to do anywhere, even with Go"
 var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
@@ -75,3 +75,4 @@ func SendMail(toName, toEmail string) error {
 	// Send Email
 	return dialer.DialAndSend(message)
 }
+/*
