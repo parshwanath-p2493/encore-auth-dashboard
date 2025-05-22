@@ -8,7 +8,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"gopkg.in/gomail.v2"
 )
 
 var (
@@ -52,6 +51,7 @@ func SendMail(toName, toEmail string) error {
 	return nil
 }
 
+/**
 var plainText = "and easy to do anywhere, even with Go"
 var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
@@ -76,3 +76,4 @@ func SendMail(toName, toEmail string) error {
 	// Send Email
 	return dialer.DialAndSend(message)
 }
+**/
