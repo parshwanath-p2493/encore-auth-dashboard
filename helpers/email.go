@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"gopkg.in/gomail.v2"
 )
 
 var (
@@ -30,9 +31,10 @@ func init() {
 func SendMail(toName, toEmail string) error {
 	from := mail.NewEmail(fromName, fromEmail)
 	to := mail.NewEmail(toName, toEmail)
-	subject := "Sending with Twilio SendGrid is Fun"
+	subject := "Welcome Message"
 	plainTextContent := "and easy to do anywhere, even with Go"
-	htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
+	//htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
+	var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 
@@ -50,7 +52,6 @@ func SendMail(toName, toEmail string) error {
 	return nil
 }
 
-/**
 var plainText = "and easy to do anywhere, even with Go"
 var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
@@ -75,4 +76,3 @@ func SendMail(toName, toEmail string) error {
 	// Send Email
 	return dialer.DialAndSend(message)
 }
-**/
