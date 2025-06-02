@@ -238,14 +238,3 @@ func SendOTPtoEmail(ctx context.Context, input *InputForgotPasswordOTP) (*URLRes
 	}, nil
 
 }
-
-//encore:api public method=POST path=/user/forgotpassword
-func ForgotPassword(ctx context.Context, input *otpandforgotpassword.InputResetPassword) (*Response, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	if errr := otpandforgotpassword.VerifyOTP(ctx, input); errr != nil {
-		return &Response{Message: "The OTP is mismatched ...."}, errr
-	}
-	return &Response{Message: "The otp is Matched and new password is set.... "}, nil
-}
