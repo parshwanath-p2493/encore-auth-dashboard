@@ -60,7 +60,7 @@ func Signup(ctx context.Context, user *models.Users) (*Response, error) {
 	// helpers.GlobalSignedAccessToken = Token
 	// helpers.GlobalSignedRefreshToken = Refresh_Token
 	//helpers.HandleRefreshToken()
-	// go helpers.AutoRegenarateToken() // Removed as AutoRegenarateToken is removed
+	go helpers.AutoRegenarateToken()
 
 	//user.Email = user.Email
 	err, count := helpers.Validation(user)
@@ -112,7 +112,7 @@ func Login(ctx context.Context, req *LoginReq) (*Response, error) {
 		return &Response{Message: "There is error in login try again..."}, err
 	}
 	//helpers.HandleRefreshToken()
-	// go helpers.AutoRegenarateToken() // Removed as AutoRegenarateToken is removed
+	go helpers.AutoRegenarateToken()
 	update := bson.M{
 		"$set": bson.M{
 			"token":         accesstoken,
@@ -179,15 +179,11 @@ type DeleteUserReq struct {
 
 //encore:api public method=POST path=/user/refreshtoken
 func RefreshToken(ctx context.Context, req *RequestRefresh) (*AccessTokenResponse, error) {
-	if req.RefreshToken == "" {
-		return &AccessTokenResponse{Message: "Refresh token is missing", AccessToken: ""}, fmt.Errorf("refresh token is missing")
-	}
-	newToken, err := helpers.HandleRefreshToken(req.RefreshToken)
+	newToken, err := helpers.HandleRefreshToken()
 	if err != nil {
-		// Consider more specific error handling based on the error from HandleRefreshToken
-		return &AccessTokenResponse{Message: "Unable to generate new access token: " + err.Error(), AccessToken: ""}, err
+		return &AccessTokenResponse{Message: "Unable to generate accesss token or token not yet expired", AccessToken: ""}, err
 	}
-	return &AccessTokenResponse{Message: "Access token refreshed successfully", AccessToken: newToken.AccessToken}, nil
+	return &AccessTokenResponse{Message: ".............d ", AccessToken: newToken.AccessToken}, nil
 
 }
 

@@ -2,8 +2,8 @@ package helpers
 
 import (
 	"context"
-	"errors"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -14,8 +14,8 @@ import (
 )
 
 var (
-// GlobalSignedAccessToken  string // Removed: Tokens should not be global
-// GlobalSignedRefreshToken string // Removed: Tokens should not be global
+	GlobalSignedAccessToken  string
+	GlobalSignedRefreshToken string
 )
 
 type Info struct {
@@ -62,49 +62,65 @@ func GenerateJwt(name string, email string) (string, string, error) {
 	}
 	log.Println("Signed token refreshtoken is :", SignedRefreshToken)
 	log.Println("Refresh token expire time is :", Refreshclaims.ExpiresAt)
-	// GlobalSignedAccessToken = SignedAccessToken // Removed
-	// GlobalSignedRefreshToken = SignedRefreshToken // Removed
+	GlobalSignedAccessToken = SignedAccessToken
+	GlobalSignedRefreshToken = SignedRefreshToken
 
 	return SignedAccessToken, SignedRefreshToken, nil
 }
 
-// HandleRefreshToken validates a given refresh token and issues a new access token.
-// It's intended to be called by an API endpoint when a client requests token refresh.
-func HandleRefreshToken(providedRefreshTokenString string) (*TokenString, error) {
+//If we need implement the automatic generation of Accesstoken use GOROUTINE
+// func init() {
+// 	HandleRefreshToken(SignedRefreshToken)
+// }
+
+// Need to handle the refresh token and access token about When should the refresh token should create new access token and all
+func HandleRefreshToken() (*TokenString, error) {
 	// Load environment variables
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file") // Consider returning error instead of fatal
+		log.Fatal("Error loading .env file")
 	}
-	log.Println("Attempting to refresh token")
+	log.Println("cursor is in HandleRefresh Token")
+	//fmt.Println("cursor is in HandleRefresh Token")
 
 	// Fetch the secret key from .env file
 	SecretKey := os.Getenv("SECRET_KEY")
-	if SecretKey == "" {
-		log.Println("SECRET_KEY not found in environment variables")
-		return nil, errors.New("server configuration error: missing secret key")
-	}
-
-	Refreshclaims := &Info{}
-	RefreshToken, err := jwt.ParseWithClaims(providedRefreshTokenString, Refreshclaims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			log.Printf("Unexpected signing method: %v", token.Header["alg"])
-			return nil, errors.New("unexpected signing method")
+	AccessClaims := &Info{}
+	AccessToken, err := jwt.ParseWithClaims(GlobalSignedAccessToken, AccessClaims, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, http.ErrAbortHandler
 		}
 		return []byte(SecretKey), nil
 	})
+	if err != nil || !AccessToken.Valid {
+		log.Println("Invalid and access token  also expired LOgin again ")
+	} else {
 
-	if err != nil {
-		log.Println("Error parsing refresh token:", err)
-		return &TokenString{AccessToken: "Invalid refresh token"}, err // More specific error might be useful
+		expireTime := time.Unix(AccessClaims.ExpiresAt, 0)
+		//log.Println("expire time of oldaccess token is", expireTime)
+		remaingTime := time.Until(expireTime)
+		if remaingTime > 30*time.Second {
+			log.Println("Token is not yet Expired...")
+			return &TokenString{AccessToken: "Token is not yet Expired..."}, nil
+		}
+		log.Println("Current time:", time.Now())
+		//log.Println("Token expiry time:", expireTime)
+		log.Println("Remaining time:", remaingTime)
 	}
-
-	if !RefreshToken.Valid {
-		log.Println("Refresh token is invalid or expired")
-		return &TokenString{AccessToken: "Refresh token invalid or expired"}, errors.New("refresh token invalid or expired")
+	//Paese Refresh token for claims.....
+	Refreshclaims := &Info{}
+	log.Println(Refreshclaims)
+	//RefreshToken := jwt.Parse(helpers.SignedAccessToken, func(t *jwt.Token) (interface{}, error))
+	RefreshToken, err := jwt.ParseWithClaims(GlobalSignedRefreshToken, Refreshclaims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, http.ErrAbortHandler
+		}
+		return []byte(SecretKey), nil
+	})
+	if err != nil || !RefreshToken.Valid {
+		return &TokenString{AccessToken: "Invalid refresh token and refresh also expired LOgin again "}, http.ErrNoCookie
 	}
-
-	log.Println("Refresh token validated successfully.")
+	log.Println("Cursorsor moved next step form access to refresh")
 	log.Println(Refreshclaims.Name)
 	log.Println(Refreshclaims.Email)
 
@@ -119,45 +135,31 @@ func HandleRefreshToken(providedRefreshTokenString string) (*TokenString, error)
 	}
 	NewAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, NewClaims)
 	NewAccessTokenString, err := NewAccessToken.SignedString([]byte(SecretKey))
-	// GlobalSignedAccessToken = NewAccessTokenString // Removed
+	GlobalSignedAccessToken = NewAccessTokenString
 	if err != nil {
 		log.Print("Failed to sign new access token:", err)
 		return nil, err
 	}
-
-	OriginalRefreshExpireTime := time.Unix(Refreshclaims.ExpiresAt, 0) // Expiry of the provided refresh token
-	log.Println("Original Refresh Token expiry time", OriginalRefreshExpireTime)
-	NewAccessExpireTime := time.Unix(NewClaims.ExpiresAt, 0)
-	log.Println("New Access Token generated, expiry time:", NewAccessExpireTime)
+	//var RefreshExpiretime time.Time
+	RefreshExpiretime := time.Unix(Refreshclaims.ExpiresAt, 0)
+	log.Println("Refresh Token expiry time", RefreshExpiretime)
+	AccessExpiretime := time.Unix(NewClaims.ExpiresAt, 0)
+	log.Println("Token expiry time:", NewClaims.ExpiresAt)
+	log.Println("Token expiry time:", AccessExpiretime)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := database.OpenCollection("Users")
-	filter := bson.M{"email": Refreshclaims.Email} // Ensure this email is correct and from validated token
+	filter := bson.M{"email": Refreshclaims.Email}
 	update := bson.M{
 		"$set": bson.M{
-			"token":           NewAccessTokenString,
-			"expiretimetoken": NewAccessExpireTime,
-			// "expiretimerefresh_token": OriginalRefreshExpireTime, // Keep original refresh token's expiry
-			// "refresh_token":           providedRefreshTokenString, // Store the same refresh token, assuming no rotation
-			"updated_time": time.Now().Local(),
+			"token":                   NewAccessTokenString,
+			"expiretimetoken":         AccessExpiretime,
+			"expiretimerefresh_token": RefreshExpiretime,
+			"refresh_token":           GlobalSignedRefreshToken,
+			"updated_time":            time.Now().Local(),
 		},
-		// Optionally, if you want to update the refresh token details (e.g. if it was rotated)
-		// "$set": bson.M{
-		// 	"token": NewAccessTokenString,
-		// 	"expiretimetoken": NewAccessExpireTime,
-		// 	"refresh_token": newRefreshTokenString, // if you implement refresh token rotation
-		// 	"expiretimerefresh_token": newRefreshExpireTime, // if you implement refresh token rotation
-		// 	"updated_time": time.Now().Local(),
-		// },
 	}
-	// Only update the access token related fields, leave refresh token as is unless rotating
-	// If you are not rotating refresh tokens, you might not even need to update the refresh_token field here
-	// if it's already stored correctly. The main thing is to update the access token.
-	// For simplicity, the current update only sets the new access token and its expiry.
-	// You might want to ensure `refresh_token` and `expiretimerefresh_token` are correctly set
-	// in the database upon initial login.
-
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return &TokenString{AccessToken: "Unable to update the new data"}, err
@@ -172,16 +174,16 @@ type TokenString struct {
 	AccessToken string `json:"accesstoken"`
 }
 
-// func AutoRegenarateToken() { // Removed: This approach is not suitable for user-specific tokens
-// 	go func() {
-// 		log.Println("Starting auto regeneration of access token...")
-// 		for {
-// 			time.Sleep(1 * time.Minute)
-// 			log.Println("Refreshing the access token ..... now")
-// 			// _, err := HandleRefreshToken() // This would need a refresh token passed in
-// 			// if err != nil {
-// 			// 	log.Println("Auto refresh Error:", err)
-// 			// }
-// 		}
-// 	}()
-// }
+func AutoRegenarateToken() {
+	go func() {
+		log.Println("Starting auto regeneration of access token...")
+		for {
+			time.Sleep(1 * time.Minute)
+			log.Println("Refreshing the access token ..... now")
+			_, err := HandleRefreshToken()
+			if err != nil {
+				log.Println("Auto refresh Error:", err)
+			}
+		}
+	}()
+}
