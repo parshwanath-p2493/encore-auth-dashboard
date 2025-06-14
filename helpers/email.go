@@ -6,8 +6,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"gopkg.in/gomail.v2"
 )
 
 var (
@@ -27,31 +26,30 @@ func init() {
 
 }
 
-func SendMail(toName, toEmail string) error {
-	from := mail.NewEmail(fromName, fromEmail)
-	to := mail.NewEmail(toName, toEmail)
-	subject := "Welcome Message"
-	plainTextContent := "and easy to do anywhere, even with Go"
-	//htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
-	var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
+// func SendMail(toName, toEmail string) error {
+// 	from := mail.NewEmail(fromName, fromEmail)
+// 	to := mail.NewEmail(toName, toEmail)
+// 	subject := "Welcome Message"
+// 	plainTextContent := "and easy to do anywhere, even with Go"
+// 	//htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
+// 	var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+// 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 
-	client := sendgrid.NewSendClient(key)
-	response, err := client.Send(message)
-	if err != nil {
-		log.Println("SendGrid error:", err)
-		return err
-	}
+// 	client := sendgrid.NewSendClient(key)
+// 	response, err := client.Send(message)
+// 	if err != nil {
+// 		log.Println("SendGrid error:", err)
+// 		return err
+// 	}
 
-	fmt.Println("Status:", response.StatusCode)
-	fmt.Println("Body:", response.Body)
-	fmt.Println("Headers:", response.Headers)
-	log.Println("Welcome message sent successfully")
-	return nil
-}
+// 	fmt.Println("Status:", response.StatusCode)
+// 	fmt.Println("Body:", response.Body)
+// 	fmt.Println("Headers:", response.Headers)
+// 	log.Println("Welcome message sent successfully")
+// 	return nil
+// }
 
-/**
 var plainText = "and easy to do anywhere, even with Go"
 var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
 
@@ -76,4 +74,3 @@ func SendMail(toName, toEmail string) error {
 	// Send Email
 	return dialer.DialAndSend(message)
 }
-**/
