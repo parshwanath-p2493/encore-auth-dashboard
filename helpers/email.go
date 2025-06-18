@@ -8,11 +8,11 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-var (
-	fromName  string
-	fromEmail string
-	key       string
-)
+// var (
+// 	fromName  string
+// 	fromEmail string
+// 	key       string
+// )
 
 // func init() {
 // 	err := godotenv.Load(".env")
