@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -50,7 +49,7 @@ import (
 // }
 
 var plainText = "and easy to do anywhere, even with Go"
-var htmlContent = fmt.Sprint("<strong> 🔔 HI WELCOME TO OUR APP</strong>")
+var htmlContent = "<strong> 🔔 HI WELCOME TO OUR APP</strong>"
 
 var subject = "WEKCOME MESSAGE "
 
